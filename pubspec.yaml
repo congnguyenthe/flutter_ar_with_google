@@ -12,12 +12,16 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
+  google_maps_flutter: ^0.5.24+1
+  location: ^2.5.4
+  flutter_polyline_points: ^0.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   arcore_flutter_plugin: ^0.0.10
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
@@ -45,6 +49,10 @@ flutter:
     - assets/umano_digitale.png
     - assets/myimages.imgdb
     - assets/topolino.jpg
+    - assets/destination_map_marker.png
+    - assets/driving_pin.png
+    - assets/friend1.jpg
+    - assets/friend2.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
