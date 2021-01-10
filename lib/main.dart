@@ -1,24 +1,13 @@
-import 'app.dart';
 import 'package:flutter/material.dart';
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart'
     show ArCoreController;
-//
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   print('ARCORE IS AVAILABLE?');
-//   print(await ArCoreController.checkArCoreAvailability());
-//   print('\nAR SERVICES INSTALLED?');
-//   print(await ArCoreController.checkIsArCoreInstalled());
-//   runApp(App());
-// }
-
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import 'package:flutter/material.dart';
 import 'dart:async';
 import 'components/map_pin_pill.dart';
 import 'models/pin_pill_info.dart';
+import 'screens/assets_object.dart';
 
 const double CAMERA_ZOOM = 16;
 const double CAMERA_TILT = 80;
@@ -26,8 +15,15 @@ const double CAMERA_BEARING = 30;
 const LatLng SOURCE_LOCATION = LatLng(42.747932, -71.167889);
 const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
 
-void main() =>
-    runApp(MaterialApp(debugShowCheckedModeBanner: false, home: MapPage()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  print('ARCORE IS AVAILABLE?');
+  print(await ArCoreController.checkArCoreAvailability());
+  print('\nAR SERVICES INSTALLED?');
+  print(await ArCoreController.checkIsArCoreInstalled());
+  // runApp(App());
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: MapPage()));
+}
 
 class MapPage extends StatefulWidget {
   @override
@@ -126,31 +122,154 @@ class MapPageState extends State<MapPage> {
           bearing: CAMERA_BEARING);
     }
     return Scaffold(
-      body: Stack(
-        children: <Widget>[
-          GoogleMap(
-              myLocationEnabled: true,
-              compassEnabled: true,
-              tiltGesturesEnabled: false,
-              markers: _markers,
-              polylines: _polylines,
-              mapType: MapType.normal,
-              initialCameraPosition: initialCameraPosition,
-              onTap: (LatLng loc) {
-                pinPillPosition = -100;
-              },
-              onMapCreated: (GoogleMapController controller) {
-                controller.setMapStyle(Utils.mapStyles);
-                _controller.complete(controller);
-                // my map has completed being created;
-                // i'm ready to show the pins on the map
-                showPinsOnMap();
-              }),
-          MapPinPillComponent(
-              pinPillPosition: pinPillPosition,
-              currentlySelectedPin: currentlySelectedPin)
-        ],
-      ),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.topLeft,
+                child: Container(
+                  alignment: Alignment.center,
+                  height: 50.0,
+                  width: double.infinity,
+                  color: Colors.black38,
+                  child: new Row(
+                    children: [
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: Text(
+                            'Select Model'
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4, // 60% of space => (6/(6 + 4))
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: MyDropDownWidget(),
+                        )
+                      ),
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: OutlineButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => AssetsObject()));
+                          },
+                          child: Text('SHOW AR'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Align(
+                child: Container(
+                  alignment: Alignment.topLeft,
+                  height: 50.0,
+                  width: double.infinity,
+                  color: Colors.black38,
+                  child: new Row(
+                    children: [
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: new Text(
+                            'GPS Accuracy'
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4, // 60% of space => (6/(6 + 4))
+                        child: TextField(),
+                      ),
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: OutlineButton(
+                          onPressed: () {
+                            print('Received click');
+                          },
+                          child: Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Align(
+                child: Container(
+                  alignment: Alignment.topLeft,
+                  height: 50.0,
+                  width: double.infinity,
+                  color: Colors.black38,
+                  child: new Row(
+                    children: [
+                      Expanded(
+                        flex: 2, // 60% of space => (6/(6 + 4))
+                        child: new Text(
+                            'LAT:'
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: TextField(),
+                      ),
+                      Expanded(
+                        flex: 2, // 60% of space => (6/(6 + 4))
+                        child: new Text(
+                            'LONG:'
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: TextField(),
+                      ),
+                      Expanded(
+                        flex: 3, // 60% of space => (6/(6 + 4))
+                        child: OutlineButton(
+                          onPressed: () {
+                            print('Received click');
+                          },
+                          child: Text('PLACE'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  alignment: Alignment.center,
+                  color: Colors.red,
+                  child: Stack(
+                    children: <Widget>[
+                      GoogleMap(
+                          myLocationEnabled: true,
+                          compassEnabled: true,
+                          tiltGesturesEnabled: false,
+                          markers: _markers,
+                          polylines: _polylines,
+                          mapType: MapType.normal,
+                          initialCameraPosition: initialCameraPosition,
+                          onTap: (LatLng loc) {
+                            pinPillPosition = -100;
+                          },
+                          onMapCreated: (GoogleMapController controller) {
+                            controller.setMapStyle(Utils.mapStyles);
+                            _controller.complete(controller);
+                            // my map has completed being created;
+                            // i'm ready to show the pins on the map
+                            showPinsOnMap();
+                          }),
+                      MapPinPillComponent(
+                          pinPillPosition: pinPillPosition,
+                          currentlySelectedPin: currentlySelectedPin)
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+      )
     );
   }
 
@@ -262,6 +381,88 @@ class MapPageState extends State<MapPage> {
           position: pinPosition, // updated position
           icon: sourceIcon));
     });
+  }
+}
+
+/// This is the stateful widget that the main application instantiates.
+class MyDropDownWidget extends StatefulWidget {
+  MyDropDownWidget({Key key}) : super(key: key);
+
+  @override
+  _MyDropDownWidget createState() => _MyDropDownWidget();
+}
+
+/// This is the private State class that goes with MyStatefulWidget.
+class _MyDropDownWidget extends State<MyDropDownWidget> {
+  String dropdownValue = 'One';
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<String>(
+      isExpanded: true,
+      value: dropdownValue,
+      icon: Icon(Icons.arrow_downward),
+      iconSize: 24,
+      elevation: 16,
+      style: TextStyle(color: Colors.deepPurple),
+      underline: Container(
+        height: 2,
+        color: Colors.deepPurpleAccent,
+      ),
+      onChanged: (String newValue) {
+        setState(() {
+          dropdownValue = newValue;
+        });
+      },
+      items: <String>['One', 'Two', 'Free', 'Four']
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// This is the stateful widget that the main application instantiates.
+class MyTextFieldWidget extends StatefulWidget {
+  MyTextFieldWidget({Key key}) : super(key: key);
+
+  @override
+  _MyTextFieldWidget createState() => _MyTextFieldWidget();
+}
+
+/// This is the private State class that goes with MyStatefulWidget.
+class _MyTextFieldWidget extends State<MyTextFieldWidget> {
+  TextEditingController _controller;
+
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: TextField(
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.black38,
+            border: InputBorder.none,
+          ),
+          controller: _controller,
+          onSubmitted: (String value) async {
+
+          },
+        ),
+      ),
+    );
   }
 }
 
