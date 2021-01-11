@@ -2,6 +2,9 @@ import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
 import 'package:flutter/material.dart';
 
 class AssetsObject extends StatefulWidget {
+  final String initObject;
+
+  AssetsObject({Key key, this.initObject}) : super(key: key);
   @override
   _AssetsObjectState createState() => _AssetsObjectState();
 }
@@ -30,6 +33,7 @@ class _AssetsObjectState extends State<AssetsObject> {
                 onTap: (value) {
                   objectSelected = value;
                 },
+                initObject: widget.initObject,
               ),
             ),
           ],
@@ -50,6 +54,14 @@ class _AssetsObjectState extends State<AssetsObject> {
       final toucanoNode = ArCoreReferenceNode(
           name: objectSelected,
           object3DFileName: objectSelected,
+          position: plane.pose.translation,
+          rotation: plane.pose.rotation);
+
+      arCoreController.addArCoreNodeWithAnchor(toucanoNode);
+    } else if (widget.initObject != null) {
+      final toucanoNode = ArCoreReferenceNode(
+          name: widget.initObject,
+          object3DFileName: widget.initObject,
           position: plane.pose.translation,
           rotation: plane.pose.rotation);
 
@@ -99,8 +111,10 @@ class _AssetsObjectState extends State<AssetsObject> {
 
 class ListObjectSelection extends StatefulWidget {
   final Function onTap;
+  final String initObject;
 
-  ListObjectSelection({this.onTap});
+  // ListObjectSelection({this.onTap});
+  ListObjectSelection({Key key, this.initObject, this.onTap}) : super(key: key);
 
   @override
   _ListObjectSelectionState createState() => _ListObjectSelectionState();
@@ -123,6 +137,11 @@ class _ListObjectSelectionState extends State<ListObjectSelection> {
 
   @override
   void initState() {
+    String tmp = widget.initObject;
+    int matchIndex = objectsFileName.indexWhere((element) => element == tmp);
+    if ( matchIndex != -1) {
+      selected = gifs[matchIndex];
+    }
     super.initState();
   }
 

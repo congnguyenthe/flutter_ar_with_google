@@ -13,7 +13,10 @@ const double CAMERA_TILT = 0;
 const double CAMERA_BEARING = 0;
 const LatLng SOURCE_LOCATION = LatLng(42.747932, -71.167889);
 const double DEFAULT_DISTANCE = 28.08;
-const List<String> MODELS = ["TocoToucan", "AndroidBot", "ArcticFox"];
+const List<String> MODELS = ["toucan", "andy", "artic_fox"];
+
+// FIXME: avoid global variable
+String selectedModel;
 // const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
 
 void main() async {
@@ -163,7 +166,9 @@ class MapPageState extends State<MapPage> {
                         child: OutlineButton(
                           onPressed: () {
                             Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => AssetsObject()));
+                                MaterialPageRoute(builder: (context) => AssetsObject(
+                                    initObject: selectedModel + ".sfb",
+                                )));
                           },
                           child: Text('SHOW AR'),
                         ),
@@ -419,6 +424,12 @@ class _MyDropDownWidget extends State<MyDropDownWidget> {
   String dropdownValue = MODELS[0];
 
   @override
+  void initState() {
+    super.initState();
+    selectedModel = dropdownValue;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DropdownButton<String>(
       isExpanded: true,
@@ -434,6 +445,7 @@ class _MyDropDownWidget extends State<MyDropDownWidget> {
       onChanged: (String newValue) {
         setState(() {
           dropdownValue = newValue;
+          selectedModel = newValue;
         });
       },
       items: widget.initList
