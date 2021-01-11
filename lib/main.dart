@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart'
     show ArCoreController;
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'dart:async';
@@ -10,9 +9,10 @@ import 'models/pin_pill_info.dart';
 import 'screens/assets_object.dart';
 
 const double CAMERA_ZOOM = 16;
-const double CAMERA_TILT = 80;
-const double CAMERA_BEARING = 30;
+const double CAMERA_TILT = 0;
+const double CAMERA_BEARING = 0;
 const LatLng SOURCE_LOCATION = LatLng(42.747932, -71.167889);
+const double DEFAULT_DISTANCE = 28.08;
 const List<String> MODELS = ["TocoToucan", "AndroidBot", "ArcticFox"];
 // const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
 
@@ -50,6 +50,10 @@ class MapPageState extends State<MapPage> {
 // wrapper around the location API
   Location location;
   double pinPillPosition = -100;
+  double distance_accuracy = DEFAULT_DISTANCE;
+  TextEditingController _distanceAccuractyController = TextEditingController(text: DEFAULT_DISTANCE.toString());
+  TextEditingController _latController = TextEditingController();
+  TextEditingController _longController = TextEditingController();
   PinInformation currentlySelectedPin = PinInformation(
       pinPath: '',
       avatarPath: '',
@@ -74,6 +78,8 @@ class MapPageState extends State<MapPage> {
       // current user's position in real time,
       // so we're holding on to it
       currentLocation = cLoc;
+      _latController.text = currentLocation.latitude.toStringAsFixed(3);
+      _longController.text = currentLocation.longitude.toStringAsFixed(3);
       updatePinOnMap();
     });
     // set custom marker pins
@@ -182,13 +188,16 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 4, // 60% of space => (6/(6 + 4))
-                        child: TextField(),
+                        child: TextField(
+                          controller: _distanceAccuractyController,
+                        ),
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
                         child: OutlineButton(
                           onPressed: () {
-                            print('Received click');
+                            distance_accuracy = double.parse(Text(_distanceAccuractyController.text).toString());
+                            print('Received click ' + distance_accuracy.toString());
                           },
                           child: Text('Apply'),
                         ),
@@ -213,7 +222,9 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
-                        child: TextField(),
+                        child: TextField(
+                          controller: _latController,
+                        ),
                       ),
                       Expanded(
                         flex: 2, // 60% of space => (6/(6 + 4))
@@ -223,7 +234,9 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 3,
-                        child: TextField(),
+                        child: TextField(
+                          controller: _longController,
+                        ),
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
@@ -403,7 +416,7 @@ class MyDropDownWidget extends StatefulWidget {
 
 /// This is the private State class that goes with MyStatefulWidget.
 class _MyDropDownWidget extends State<MyDropDownWidget> {
-  String dropdownValue = 'One';
+  String dropdownValue = MODELS[0];
 
   @override
   Widget build(BuildContext context) {
