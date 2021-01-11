@@ -13,7 +13,8 @@ const double CAMERA_ZOOM = 16;
 const double CAMERA_TILT = 80;
 const double CAMERA_BEARING = 30;
 const LatLng SOURCE_LOCATION = LatLng(42.747932, -71.167889);
-const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
+const List<String> MODELS = ["TocoToucan", "AndroidBot", "ArcticFox"];
+// const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,17 +36,17 @@ class MapPageState extends State<MapPage> {
   Set<Marker> _markers = Set<Marker>();
 // for my drawn routes on the map
   Set<Polyline> _polylines = Set<Polyline>();
-  List<LatLng> polylineCoordinates = [];
-  PolylinePoints polylinePoints;
+  // List<LatLng> polylineCoordinates = [];
+  // PolylinePoints polylinePoints;
   String googleAPIKey = '<API_KEY>';
 // for my custom marker pins
   BitmapDescriptor sourceIcon;
-  BitmapDescriptor destinationIcon;
+  // BitmapDescriptor destinationIcon;
 // the user's initial location and current location
 // as it moves
   LocationData currentLocation;
 // a reference to the destination location
-  LocationData destinationLocation;
+//   LocationData destinationLocation;
 // wrapper around the location API
   Location location;
   double pinPillPosition = -100;
@@ -56,7 +57,7 @@ class MapPageState extends State<MapPage> {
       locationName: '',
       labelColor: Colors.grey);
   PinInformation sourcePinInfo;
-  PinInformation destinationPinInfo;
+  // PinInformation destinationPinInfo;
 
   @override
   void initState() {
@@ -64,7 +65,7 @@ class MapPageState extends State<MapPage> {
 
     // create an instance of Location
     location = new Location();
-    polylinePoints = PolylinePoints();
+    // polylinePoints = PolylinePoints();
 
     // subscribe to changes in the user's location
     // by "listening" to the location's onLocationChanged event
@@ -88,11 +89,11 @@ class MapPageState extends State<MapPage> {
       sourceIcon = onValue;
     });
 
-    BitmapDescriptor.fromAssetImage(ImageConfiguration(devicePixelRatio: 2.0),
-        'assets/destination_map_marker.png')
-        .then((onValue) {
-      destinationIcon = onValue;
-    });
+    // BitmapDescriptor.fromAssetImage(ImageConfiguration(devicePixelRatio: 2.0),
+    //     'assets/destination_map_marker.png')
+    //     .then((onValue) {
+    //   destinationIcon = onValue;
+    // });
   }
 
   void setInitialLocation() async {
@@ -101,10 +102,10 @@ class MapPageState extends State<MapPage> {
     currentLocation = await location.getLocation();
 
     // hard-coded destination for this example
-    destinationLocation = LocationData.fromMap({
-      "latitude": DEST_LOCATION.latitude,
-      "longitude": DEST_LOCATION.longitude
-    });
+    // destinationLocation = LocationData.fromMap({
+    //   "latitude": DEST_LOCATION.latitude,
+    //   "longitude": DEST_LOCATION.longitude
+    // });
   }
 
   @override
@@ -146,7 +147,9 @@ class MapPageState extends State<MapPage> {
                         flex: 4, // 60% of space => (6/(6 + 4))
                         child: Padding(
                           padding: const EdgeInsets.all(5.0),
-                          child: MyDropDownWidget(),
+                          child: MyDropDownWidget(
+                            initList: MODELS,
+                          ),
                         )
                       ),
                       Expanded(
@@ -253,7 +256,7 @@ class MapPageState extends State<MapPage> {
                             pinPillPosition = -100;
                           },
                           onMapCreated: (GoogleMapController controller) {
-                            controller.setMapStyle(Utils.mapStyles);
+                            // controller.setMapStyle(Utils.mapStyles);
                             _controller.complete(controller);
                             // my map has completed being created;
                             // i'm ready to show the pins on the map
@@ -279,8 +282,8 @@ class MapPageState extends State<MapPage> {
     var pinPosition =
     LatLng(currentLocation.latitude, currentLocation.longitude);
     // get a LatLng out of the LocationData object
-    var destPosition =
-    LatLng(destinationLocation.latitude, destinationLocation.longitude);
+    // var destPosition =
+    // LatLng(destinationLocation.latitude, destinationLocation.longitude);
 
     sourcePinInfo = PinInformation(
         locationName: "Start Location",
@@ -289,15 +292,20 @@ class MapPageState extends State<MapPage> {
         avatarPath: "assets/friend1.jpg",
         labelColor: Colors.blueAccent);
 
-    destinationPinInfo = PinInformation(
-        locationName: "End Location",
-        location: DEST_LOCATION,
-        pinPath: "assets/destination_map_marker.png",
-        avatarPath: "assets/friend2.jpg",
-        labelColor: Colors.purple);
+    // destinationPinInfo = PinInformation(
+    //     locationName: "End Location",
+    //     location: DEST_LOCATION,
+    //     pinPath: "assets/destination_map_marker.png",
+    //     avatarPath: "assets/friend2.jpg",
+    //     labelColor: Colors.purple);
 
     // add the initial source location pin
     _markers.add(Marker(
+        draggable: true,
+        onDragEnd: ((newPosition) {
+          print(newPosition.latitude);
+          print(newPosition.longitude);
+        }),
         markerId: MarkerId('sourcePin'),
         position: pinPosition,
         onTap: () {
@@ -308,43 +316,43 @@ class MapPageState extends State<MapPage> {
         },
         icon: sourceIcon));
     // destination pin
-    _markers.add(Marker(
-        markerId: MarkerId('destPin'),
-        position: destPosition,
-        onTap: () {
-          setState(() {
-            currentlySelectedPin = destinationPinInfo;
-            pinPillPosition = 0;
-          });
-        },
-        icon: destinationIcon));
+    // _markers.add(Marker(
+    //     markerId: MarkerId('destPin'),
+    //     position: destPosition,
+    //     onTap: () {
+    //       setState(() {
+    //         currentlySelectedPin = destinationPinInfo;
+    //         pinPillPosition = 0;
+    //       });
+    //     },
+    //     icon: destinationIcon));
     // set the route lines on the map from source to destination
     // for more info follow this tutorial
-    setPolylines();
+    // setPolylines();
   }
-
-  void setPolylines() async {
-    List<PointLatLng> result = await polylinePoints.getRouteBetweenCoordinates(
-        googleAPIKey,
-        currentLocation.latitude,
-        currentLocation.longitude,
-        destinationLocation.latitude,
-        destinationLocation.longitude);
-
-    if (result.isNotEmpty) {
-      result.forEach((PointLatLng point) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      });
-
-      setState(() {
-        _polylines.add(Polyline(
-            width: 2, // set the width of the polylines
-            polylineId: PolylineId("poly"),
-            color: Color.fromARGB(255, 40, 122, 198),
-            points: polylineCoordinates));
-      });
-    }
-  }
+  //
+  // void setPolylines() async {
+  //   List<PointLatLng> result = await polylinePoints.getRouteBetweenCoordinates(
+  //       googleAPIKey,
+  //       currentLocation.latitude,
+  //       currentLocation.longitude,
+  //       destinationLocation.latitude,
+  //       destinationLocation.longitude);
+  //
+  //   if (result.isNotEmpty) {
+  //     result.forEach((PointLatLng point) {
+  //       polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+  //     });
+  //
+  //     setState(() {
+  //       _polylines.add(Polyline(
+  //           width: 2, // set the width of the polylines
+  //           polylineId: PolylineId("poly"),
+  //           color: Color.fromARGB(255, 40, 122, 198),
+  //           points: polylineCoordinates));
+  //     });
+  //   }
+  // }
 
   void updatePinOnMap() async {
     // create a new CameraPosition instance
@@ -386,7 +394,8 @@ class MapPageState extends State<MapPage> {
 
 /// This is the stateful widget that the main application instantiates.
 class MyDropDownWidget extends StatefulWidget {
-  MyDropDownWidget({Key key}) : super(key: key);
+  final List<String> initList;
+  MyDropDownWidget({Key key, this.initList}) : super(key: key);
 
   @override
   _MyDropDownWidget createState() => _MyDropDownWidget();
@@ -414,7 +423,7 @@ class _MyDropDownWidget extends State<MyDropDownWidget> {
           dropdownValue = newValue;
         });
       },
-      items: <String>['One', 'Two', 'Free', 'Four']
+      items: widget.initList
           .map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
