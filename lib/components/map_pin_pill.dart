@@ -51,8 +51,8 @@ class MapPinPillComponentState extends State<MapPinPillComponent> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
                           Text(widget.currentlySelectedPin.locationName, style: TextStyle(color: widget.currentlySelectedPin.labelColor)),
-                          Text('Latitude: ${widget.currentlySelectedPin.location.latitude.toString()}', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          Text('Longitude: ${widget.currentlySelectedPin.location.longitude.toString()}', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('Latitude: ${widget.currentlySelectedPin.location.latitude.toStringAsFixed(5)}', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('Longitude: ${widget.currentlySelectedPin.location.longitude.toStringAsFixed(5)}', style: TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ),

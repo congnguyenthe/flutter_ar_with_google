@@ -14,6 +14,9 @@ const double CAMERA_BEARING = 0;
 const LatLng SOURCE_LOCATION = LatLng(42.747932, -71.167889);
 const double DEFAULT_DISTANCE = 28.08;
 const List<String> MODELS = ["toucan", "andy", "artic_fox"];
+const int MAXIMUM_MARKERS = 15;
+
+const LatLng DEST_LOCATION = LatLng(37.335685, -122.0605916);
 
 // FIXME: avoid global variable
 String selectedModel;
@@ -37,14 +40,10 @@ class MapPage extends StatefulWidget {
 class MapPageState extends State<MapPage> {
   Completer<GoogleMapController> _controller = Completer();
   Set<Marker> _markers = Set<Marker>();
-// for my drawn routes on the map
-  Set<Polyline> _polylines = Set<Polyline>();
-  // List<LatLng> polylineCoordinates = [];
-  // PolylinePoints polylinePoints;
   String googleAPIKey = '<API_KEY>';
-// for my custom marker pins
-  BitmapDescriptor sourceIcon;
-  // BitmapDescriptor destinationIcon;
+// // for my custom marker pins
+//   BitmapDescriptor sourceIcon;
+//   BitmapDescriptor destinationIcon;
 // the user's initial location and current location
 // as it moves
   LocationData currentLocation;
@@ -52,6 +51,7 @@ class MapPageState extends State<MapPage> {
 //   LocationData destinationLocation;
 // wrapper around the location API
   Location location;
+  int markerID = 0;
   double pinPillPosition = -100;
   double distance_accuracy = DEFAULT_DISTANCE;
   TextEditingController _distanceAccuractyController = TextEditingController(text: DEFAULT_DISTANCE.toString());
@@ -63,8 +63,6 @@ class MapPageState extends State<MapPage> {
       location: LatLng(0, 0),
       locationName: '',
       labelColor: Colors.grey);
-  PinInformation sourcePinInfo;
-  // PinInformation destinationPinInfo;
 
   @override
   void initState() {
@@ -72,7 +70,6 @@ class MapPageState extends State<MapPage> {
 
     // create an instance of Location
     location = new Location();
-    // polylinePoints = PolylinePoints();
 
     // subscribe to changes in the user's location
     // by "listening" to the location's onLocationChanged event
@@ -81,28 +78,11 @@ class MapPageState extends State<MapPage> {
       // current user's position in real time,
       // so we're holding on to it
       currentLocation = cLoc;
-      _latController.text = currentLocation.latitude.toStringAsFixed(3);
-      _longController.text = currentLocation.longitude.toStringAsFixed(3);
-      updatePinOnMap();
     });
     // set custom marker pins
-    setSourceAndDestinationIcons();
+    // setSourceAndDestinationIcons();
     // set the initial location
     setInitialLocation();
-  }
-
-  void setSourceAndDestinationIcons() async {
-    BitmapDescriptor.fromAssetImage(
-        ImageConfiguration(devicePixelRatio: 2.0), 'assets/driving_pin.png')
-        .then((onValue) {
-      sourceIcon = onValue;
-    });
-
-    // BitmapDescriptor.fromAssetImage(ImageConfiguration(devicePixelRatio: 2.0),
-    //     'assets/destination_map_marker.png')
-    //     .then((onValue) {
-    //   destinationIcon = onValue;
-    // });
   }
 
   void setInitialLocation() async {
@@ -110,11 +90,7 @@ class MapPageState extends State<MapPage> {
     // current location from the location's getLocation()
     currentLocation = await location.getLocation();
 
-    // hard-coded destination for this example
-    // destinationLocation = LocationData.fromMap({
-    //   "latitude": DEST_LOCATION.latitude,
-    //   "longitude": DEST_LOCATION.longitude
-    // });
+    addMarker(currentLocation.latitude, currentLocation.longitude, 0);
   }
 
   @override
@@ -201,7 +177,7 @@ class MapPageState extends State<MapPage> {
                         flex: 3, // 60% of space => (6/(6 + 4))
                         child: OutlineButton(
                           onPressed: () {
-                            distance_accuracy = double.parse(Text(_distanceAccuractyController.text).toString());
+                            distance_accuracy = double.parse((_distanceAccuractyController.text));
                             print('Received click ' + distance_accuracy.toString());
                           },
                           child: Text('Apply'),
@@ -247,7 +223,12 @@ class MapPageState extends State<MapPage> {
                         flex: 3, // 60% of space => (6/(6 + 4))
                         child: OutlineButton(
                           onPressed: () {
-                            print('Received click');
+                            if (markerID >= MAXIMUM_MARKERS) {
+                              markerID = 0;
+                            } else {
+                              markerID += 1;
+                            }
+                            addMarker(double.parse(_latController.text.toString()), double.parse(_longController.text.toString()), markerID);
                           },
                           child: Text('PLACE'),
                         ),
@@ -267,7 +248,7 @@ class MapPageState extends State<MapPage> {
                           compassEnabled: true,
                           tiltGesturesEnabled: false,
                           markers: _markers,
-                          polylines: _polylines,
+                          // polylines: _polylines,
                           mapType: MapType.normal,
                           initialCameraPosition: initialCameraPosition,
                           onTap: (LatLng loc) {
@@ -278,7 +259,6 @@ class MapPageState extends State<MapPage> {
                             _controller.complete(controller);
                             // my map has completed being created;
                             // i'm ready to show the pins on the map
-                            showPinsOnMap();
                           }),
                       MapPinPillComponent(
                           pinPillPosition: pinPillPosition,
@@ -294,119 +274,52 @@ class MapPageState extends State<MapPage> {
     );
   }
 
-  void showPinsOnMap() {
-    // get a LatLng for the source location
-    // from the LocationData currentLocation object
-    var pinPosition =
-    LatLng(currentLocation.latitude, currentLocation.longitude);
-    // get a LatLng out of the LocationData object
-    // var destPosition =
-    // LatLng(destinationLocation.latitude, destinationLocation.longitude);
-
-    sourcePinInfo = PinInformation(
-        locationName: "Start Location",
-        location: SOURCE_LOCATION,
-        pinPath: "assets/driving_pin.png",
-        avatarPath: "assets/friend1.jpg",
-        labelColor: Colors.blueAccent);
-
-    // destinationPinInfo = PinInformation(
-    //     locationName: "End Location",
-    //     location: DEST_LOCATION,
-    //     pinPath: "assets/destination_map_marker.png",
-    //     avatarPath: "assets/friend2.jpg",
-    //     labelColor: Colors.purple);
-
-    // add the initial source location pin
-    _markers.add(Marker(
-        draggable: true,
-        onDragEnd: ((newPosition) {
-          print(newPosition.latitude);
-          print(newPosition.longitude);
-        }),
-        markerId: MarkerId('sourcePin'),
-        position: pinPosition,
-        onTap: () {
-          setState(() {
-            currentlySelectedPin = sourcePinInfo;
-            pinPillPosition = 0;
-          });
-        },
-        icon: sourceIcon));
-    // destination pin
-    // _markers.add(Marker(
-    //     markerId: MarkerId('destPin'),
-    //     position: destPosition,
-    //     onTap: () {
-    //       setState(() {
-    //         currentlySelectedPin = destinationPinInfo;
-    //         pinPillPosition = 0;
-    //       });
-    //     },
-    //     icon: destinationIcon));
-    // set the route lines on the map from source to destination
-    // for more info follow this tutorial
-    // setPolylines();
-  }
-  //
-  // void setPolylines() async {
-  //   List<PointLatLng> result = await polylinePoints.getRouteBetweenCoordinates(
-  //       googleAPIKey,
-  //       currentLocation.latitude,
-  //       currentLocation.longitude,
-  //       destinationLocation.latitude,
-  //       destinationLocation.longitude);
-  //
-  //   if (result.isNotEmpty) {
-  //     result.forEach((PointLatLng point) {
-  //       polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-  //     });
-  //
-  //     setState(() {
-  //       _polylines.add(Polyline(
-  //           width: 2, // set the width of the polylines
-  //           polylineId: PolylineId("poly"),
-  //           color: Color.fromARGB(255, 40, 122, 198),
-  //           points: polylineCoordinates));
-  //     });
-  //   }
-  // }
-
-  void updatePinOnMap() async {
-    // create a new CameraPosition instance
-    // every time the location changes, so the camera
-    // follows the pin as it moves with an animation
-    CameraPosition cPosition = CameraPosition(
-      zoom: CAMERA_ZOOM,
-      tilt: CAMERA_TILT,
-      bearing: CAMERA_BEARING,
-      target: LatLng(currentLocation.latitude, currentLocation.longitude),
-    );
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(cPosition));
-    // do this inside the setState() so Flutter gets notified
-    // that a widget update is due
+  void addMarker(double lat, double long, int id) {
+    showNewMarker(lat, long);
     setState(() {
       // updated position
-      var pinPosition =
-      LatLng(currentLocation.latitude, currentLocation.longitude);
-
-      sourcePinInfo.location = pinPosition;
+      var pinPosition = LatLng(lat, long);
 
       // the trick is to remove the marker (by id)
       // and add it again at the updated location
-      _markers.removeWhere((m) => m.markerId.value == 'sourcePin');
+
+      PinInformation destinationPinInfo;
+
+      destinationPinInfo = PinInformation(
+          locationName: "End Location",
+          location: pinPosition,
+          pinPath: "assets/destination_map_marker.png",
+          avatarPath: "assets/friend2.jpg",
+          labelColor: Colors.purple);
+
+      _markers.removeWhere((m) => m.markerId.value == 'destPin' + id.toString());
       _markers.add(Marker(
-          markerId: MarkerId('sourcePin'),
-          onTap: () {
-            setState(() {
-              currentlySelectedPin = sourcePinInfo;
-              pinPillPosition = 0;
-            });
-          },
-          position: pinPosition, // updated position
-          icon: sourceIcon));
+        draggable: true,
+        markerId: MarkerId('destPin' + markerID.toString()),
+        onTap: () {
+          setState(() {
+            currentlySelectedPin = destinationPinInfo;
+            pinPillPosition = 0;
+          });
+        },
+        onDragEnd: ((newPosition) {
+          addMarker(newPosition.latitude, newPosition.longitude, id);
+        }),
+        position: pinPosition, // updated position
+        // icon: sourceIcon
+      ));
     });
+  }
+
+  void showNewMarker(double lat, double long) async {
+    CameraPosition cPosition = CameraPosition(
+            zoom: CAMERA_ZOOM,
+            tilt: CAMERA_TILT,
+            bearing: CAMERA_BEARING,
+            target: LatLng(lat, long),
+          );
+          final GoogleMapController controller = await _controller.future;
+          controller.animateCamera(CameraUpdate.newCameraPosition(cPosition));
   }
 }
 
@@ -500,165 +413,165 @@ class _MyTextFieldWidget extends State<MyTextFieldWidget> {
   }
 }
 
-class Utils {
-  static String mapStyles = '''[
-  {
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#f5f5f5"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#f5f5f5"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.land_parcel",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#bdbdbd"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#eeeeee"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#e5e5e5"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#ffffff"
-      }
-    ]
-  },
-  {
-    "featureType": "road.arterial",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#dadada"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "featureType": "road.local",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  },
-  {
-    "featureType": "transit.line",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#e5e5e5"
-      }
-    ]
-  },
-  {
-    "featureType": "transit.station",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#eeeeee"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#c9c9c9"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  }
-]''';
-}
+// class Utils {
+//   static String mapStyles = '''[
+//   {
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#f5f5f5"
+//       }
+//     ]
+//   },
+//   {
+//     "elementType": "labels.icon",
+//     "stylers": [
+//       {
+//         "visibility": "off"
+//       }
+//     ]
+//   },
+//   {
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#616161"
+//       }
+//     ]
+//   },
+//   {
+//     "elementType": "labels.text.stroke",
+//     "stylers": [
+//       {
+//         "color": "#f5f5f5"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "administrative.land_parcel",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#bdbdbd"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "poi",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#eeeeee"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "poi",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#757575"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "poi.park",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#e5e5e5"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "poi.park",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#9e9e9e"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#ffffff"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road.arterial",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#757575"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road.highway",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#dadada"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road.highway",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#616161"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road.local",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#9e9e9e"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "transit.line",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#e5e5e5"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "transit.station",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#eeeeee"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "water",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "color": "#c9c9c9"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "water",
+//     "elementType": "labels.text.fill",
+//     "stylers": [
+//       {
+//         "color": "#9e9e9e"
+//       }
+//     ]
+//   }
+// ]''';
+// }
