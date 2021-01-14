@@ -7,6 +7,7 @@ import 'dart:async';
 import 'components/map_pin_pill.dart';
 import 'models/pin_pill_info.dart';
 import 'screens/assets_object.dart';
+import 'dart:math' show cos, sqrt, asin;
 
 const double CAMERA_ZOOM = 16;
 const double CAMERA_TILT = 0;
@@ -41,15 +42,12 @@ class MapPageState extends State<MapPage> {
   Completer<GoogleMapController> _controller = Completer();
   Set<Marker> _markers = Set<Marker>();
   String googleAPIKey = '<API_KEY>';
-// // for my custom marker pins
-//   BitmapDescriptor sourceIcon;
-//   BitmapDescriptor destinationIcon;
-// the user's initial location and current location
-// as it moves
+// for my custom marker pins
+  BitmapDescriptor sourceIcon;
+  BitmapDescriptor destinationIcon;
+  bool enableAR = false;
+
   LocationData currentLocation;
-// a reference to the destination location
-//   LocationData destinationLocation;
-// wrapper around the location API
   Location location;
   int markerID = 0;
   double pinPillPosition = -100;
@@ -78,11 +76,45 @@ class MapPageState extends State<MapPage> {
       // current user's position in real time,
       // so we're holding on to it
       currentLocation = cLoc;
+
+      verifyDistance();
     });
-    // set custom marker pins
-    // setSourceAndDestinationIcons();
     // set the initial location
     setInitialLocation();
+
+    BitmapDescriptor.fromAssetImage(ImageConfiguration(devicePixelRatio: 2.0),
+        'assets/destination_map_marker.png')
+        .then((onValue) {
+      destinationIcon = onValue;
+    });
+  }
+
+  bool verifyDistance() {
+    setState(() {
+      if (_markers.length > 0) {
+        for (int i = 0; i < _markers.length; i++) {
+          double distance = calculateDistance(_markers.elementAt(i).position.latitude, _markers.elementAt(i).position.longitude,
+              currentLocation.latitude, currentLocation.longitude);
+          print("DISTANCE IS " + distance.toString());
+          if ( distance < distance_accuracy) {
+            // highlightMarker(mMarkers.get(i));
+            enableAR = true;
+          } else {
+            // normalizeMarker(mMarkers.get(i));
+            enableAR = false;
+          }
+        }
+      }
+    });
+  }
+
+  double calculateDistance(lat1, lon1, lat2, lon2) {
+    var p = 0.017453292519943295;
+    var c = cos;
+    var a = 0.5 - c((lat2 - lat1) * p) / 2 +
+        c(lat1 * p) * c(lat2 * p) *
+            (1 - c((lon2 - lon1) * p)) / 2;
+    return 12742000 * asin(sqrt(a));
   }
 
   void setInitialLocation() async {
@@ -119,7 +151,7 @@ class MapPageState extends State<MapPage> {
                   alignment: Alignment.center,
                   height: 50.0,
                   width: double.infinity,
-                  color: Colors.black38,
+                  color: Colors.lightGreen[200],
                   child: new Row(
                     children: [
                       Expanded(
@@ -139,14 +171,17 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
-                        child: OutlineButton(
+                        child: MyCustomOutlineButton(
                           onPressed: () {
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => AssetsObject(
+                            if (enableAR) {
+                              Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) => AssetsObject(
                                     initObject: selectedModel + ".sfb",
-                                )));
+                                  )));
+                            }
                           },
-                          child: Text('SHOW AR'),
+                          text: 'SHOW AR',
+                            color: enableAR == true ? Colors.blue : Colors.redAccent,
                         ),
                       ),
                     ],
@@ -158,7 +193,7 @@ class MapPageState extends State<MapPage> {
                   alignment: Alignment.topLeft,
                   height: 50.0,
                   width: double.infinity,
-                  color: Colors.black38,
+                  color: Colors.lightGreen[200],
                   child: new Row(
                     children: [
                       Expanded(
@@ -175,12 +210,17 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
-                        child: OutlineButton(
+                        child: MyCustomOutlineButton(
                           onPressed: () {
-                            distance_accuracy = double.parse((_distanceAccuractyController.text));
+                            double tempDistance = double.tryParse((_distanceAccuractyController.text));
+                            if (tempDistance != null){
+                              distance_accuracy = tempDistance;
+                              verifyDistance();
+                            }
                             print('Received click ' + distance_accuracy.toString());
                           },
-                          child: Text('Apply'),
+                          text: 'Apply',
+                            color: Colors.blue,
                         ),
                       ),
                     ],
@@ -192,7 +232,7 @@ class MapPageState extends State<MapPage> {
                   alignment: Alignment.topLeft,
                   height: 50.0,
                   width: double.infinity,
-                  color: Colors.black38,
+                  color: Colors.lightGreen[200],
                   child: new Row(
                     children: [
                       Expanded(
@@ -221,16 +261,17 @@ class MapPageState extends State<MapPage> {
                       ),
                       Expanded(
                         flex: 3, // 60% of space => (6/(6 + 4))
-                        child: OutlineButton(
+                        child: MyCustomOutlineButton(
                           onPressed: () {
                             if (markerID >= MAXIMUM_MARKERS) {
                               markerID = 0;
                             } else {
                               markerID += 1;
                             }
-                            addMarker(double.parse(_latController.text.toString()), double.parse(_longController.text.toString()), markerID);
+                            addMarker(double.tryParse(_latController.text.toString()), double.tryParse(_longController.text.toString()), markerID);
                           },
-                          child: Text('PLACE'),
+                          text: 'PLACE',
+                          color: Colors.blue,
                         ),
                       ),
                     ],
@@ -240,22 +281,20 @@ class MapPageState extends State<MapPage> {
               Expanded(
                 child: Container(
                   alignment: Alignment.center,
-                  color: Colors.red,
                   child: Stack(
                     children: <Widget>[
                       GoogleMap(
                           myLocationEnabled: true,
+                          myLocationButtonEnabled: true,
                           compassEnabled: true,
                           tiltGesturesEnabled: false,
                           markers: _markers,
-                          // polylines: _polylines,
                           mapType: MapType.normal,
                           initialCameraPosition: initialCameraPosition,
                           onTap: (LatLng loc) {
                             pinPillPosition = -100;
                           },
                           onMapCreated: (GoogleMapController controller) {
-                            // controller.setMapStyle(Utils.mapStyles);
                             _controller.complete(controller);
                             // my map has completed being created;
                             // i'm ready to show the pins on the map
@@ -275,13 +314,13 @@ class MapPageState extends State<MapPage> {
   }
 
   void addMarker(double lat, double long, int id) {
+    if (lat == null || long == null) {
+      return;
+    }
     showNewMarker(lat, long);
     setState(() {
       // updated position
       var pinPosition = LatLng(lat, long);
-
-      // the trick is to remove the marker (by id)
-      // and add it again at the updated location
 
       PinInformation destinationPinInfo;
 
@@ -304,9 +343,10 @@ class MapPageState extends State<MapPage> {
         },
         onDragEnd: ((newPosition) {
           addMarker(newPosition.latitude, newPosition.longitude, id);
+          verifyDistance();
         }),
         position: pinPosition, // updated position
-        // icon: sourceIcon
+        icon: destinationIcon,
       ));
     });
   }
@@ -372,206 +412,41 @@ class _MyDropDownWidget extends State<MyDropDownWidget> {
   }
 }
 
-/// This is the stateful widget that the main application instantiates.
-class MyTextFieldWidget extends StatefulWidget {
-  MyTextFieldWidget({Key key}) : super(key: key);
+class MyCustomOutlineButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+  final Color color;
+
+  const MyCustomOutlineButton({Key key, this.text, this.onPressed, this.color})
+      : super(key: key);
 
   @override
-  _MyTextFieldWidget createState() => _MyTextFieldWidget();
-}
-
-/// This is the private State class that goes with MyStatefulWidget.
-class _MyTextFieldWidget extends State<MyTextFieldWidget> {
-  TextEditingController _controller;
-
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-  }
-
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: TextField(
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.black38,
-            border: InputBorder.none,
-          ),
-          controller: _controller,
-          onSubmitted: (String value) async {
-
-          },
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.yellow, width: 2.0),
+        color: color,
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      margin: EdgeInsets.all(2.0),
+      child: RawMaterialButton(
+        fillColor: color,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
         ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14.0),
+          child: Text(
+            text,
+            style: TextStyle(
+                fontFamily: 'Lalezar',
+                fontWeight: FontWeight.w400,
+                color: Colors.yellow),
+          ),
+        ),
+        onPressed: onPressed,
       ),
     );
   }
 }
-
-// class Utils {
-//   static String mapStyles = '''[
-//   {
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#f5f5f5"
-//       }
-//     ]
-//   },
-//   {
-//     "elementType": "labels.icon",
-//     "stylers": [
-//       {
-//         "visibility": "off"
-//       }
-//     ]
-//   },
-//   {
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#616161"
-//       }
-//     ]
-//   },
-//   {
-//     "elementType": "labels.text.stroke",
-//     "stylers": [
-//       {
-//         "color": "#f5f5f5"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "administrative.land_parcel",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#bdbdbd"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "poi",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#eeeeee"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "poi",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#757575"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "poi.park",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#e5e5e5"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "poi.park",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#9e9e9e"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "road",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#ffffff"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "road.arterial",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#757575"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "road.highway",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#dadada"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "road.highway",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#616161"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "road.local",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#9e9e9e"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "transit.line",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#e5e5e5"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "transit.station",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#eeeeee"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "water",
-//     "elementType": "geometry",
-//     "stylers": [
-//       {
-//         "color": "#c9c9c9"
-//       }
-//     ]
-//   },
-//   {
-//     "featureType": "water",
-//     "elementType": "labels.text.fill",
-//     "stylers": [
-//       {
-//         "color": "#9e9e9e"
-//       }
-//     ]
-//   }
-// ]''';
-// }
