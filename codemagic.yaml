@@ -6,8 +6,8 @@ workflows:
         name: iOS App
         environment:
             vars:
-                XCODE_WORKSPACE: "{{ ADD WORKSPACE NAME HERE }}"
-                XCODE_SCHEME: "{{ ADD SCHEME NAME HERE }}"
+                XCODE_WORKSPACE: "google_maps_with_ar"
+                XCODE_SCHEME: "google_maps_with_ar"
             xcode: latest
             cocoapods: default
         scripts:
