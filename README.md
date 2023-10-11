@@ -1,6 +1,7 @@
 # Augmented Reality with Google Maps in Dart
 
 Display AR objects when users arrive at a specific location
+
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/darknessangled12)
 
 ## Installation
